@@ -1,48 +1,70 @@
-**Salesforce Automation Viewer - Standalone Web App**
+**Salesforce Automation Analyzer - Native Salesforce App**
 
 ## **Project Overview**
-This project is a standalone web application designed to fetch, display, and analyze all automation in a Salesforce instance. It will provide a clear overview of flows, Apex triggers, and related classes, along with a log visualization tool to identify errors efficiently.
+This project is a Salesforce-native application designed to fetch, display, and analyze all automation in a Salesforce instance. It will provide a clear overview of flows, Apex triggers, and related classes, along with a log visualization tool to identify errors efficiently.
 
 ## **Technology Stack**
-To ensure transferable skills within the Salesforce ecosystem, the following technologies will be used:
+To develop and enhance Salesforce development skills, the following technologies will be used:
 
 ### **Frontend**
-- **React + TypeScript**: Ensures a modern, scalable UI while maintaining a structure similar to Salesforce’s Lightning Web Components (LWC).
-- **Salesforce Lightning Design System (SLDS)**: Provides a Salesforce-native look and feel.
+- **Lightning Web Components (LWC)**: Modern framework for building Salesforce UI components
+- **Lightning Design System (SLDS)**: Salesforce's design system for consistent UI/UX
+- **JavaScript (ES6+)**: For client-side logic in LWC
 
 ### **Backend**
-- **Node.js + Express.js**: A lightweight and scalable backend framework, similar in structure to Salesforce Apex.
-- **Salesforce REST & Metadata API**: Used to retrieve automation data from the Salesforce instance.
-- **GraphQL (Optional via Apollo Server)**: Enables efficient querying of only the required data.
+- **Apex**: Salesforce's server-side language for business logic
+- **SOQL/SOSL**: For querying Salesforce data
+- **Metadata API (via Apex)**: For retrieving metadata about automation components
 
-### **Database (Optional for Caching or Logs)**
-- **PostgreSQL**: Provides structured storage for automation metadata and logs, aligning with Salesforce’s SOQL model.
-- **Redis**: Caches API responses for better performance.
+### **Integration**
+- **Custom Platform Events**: For real-time updates (optional)
+- **Apex REST Services**: For any external integrations if needed
 
-### **Visualization & Logs**
-- **D3.js**: Used for creating interactive flowcharts to represent automation execution.
-- **Chart.js / Recharts**: Enables graphical representation of error analytics.
+### **Visualization**
+- **Lightning Web Components**: Custom visualizations using JavaScript libraries
+- **LWC-compatible visualization libraries**: Chart.js or D3.js wrapped in LWC
 
 ## **Key Features**
 ### **1. Automation Discovery**
-- Fetch all flows, Apex triggers, and classes from Salesforce.
-- Identify dependencies between automation elements.
-- Provide search and filtering options.
+- Use Tooling API via Apex to fetch flows, Apex triggers, and classes
+- Create custom metadata relationships to identify dependencies
+- Build LWC components for searching and filtering
 
 ### **2. Log Analyzer**
-- Retrieve and analyze error logs using the Salesforce Event Monitoring API.
-- Visualize execution flow to pinpoint failing automation steps.
-- Display error details with a structured UI.
+- Access and parse Apex debug logs
+- Build LWC-based visualizations to represent execution flow
+- Create custom components to display error details with proper formatting
 
 ### **3. UI Features**
-- Intuitive dashboard with a list of automations.
-- Expandable details for each automation element.
-- Clickable logs that highlight the failing process.
+- Lightning App with multiple tabs and components
+- Interactive components with expandable details
+- Custom Lightning Page templates for optimal layout
+
+## **Implementation Approach**
+### **1. Apex Classes**
+- `AutomationService`: Core service for retrieving automation metadata
+- `LogAnalyzerService`: Service for analyzing debug logs
+- `FlowController`: Controller for Flow-related LWC components
+- `ApexAnalyzerController`: Controller for Apex analysis components
+- `DependencyService`: Service to map dependencies between components
+
+### **2. Lightning Web Components**
+- `automationDashboard`: Main dashboard component
+- `flowViewer`: Component for viewing and analyzing flows
+- `apexViewer`: Component for viewing Apex triggers and classes
+- `logAnalyzer`: Component for analyzing debug logs
+- `dependencyVisualizer`: Visual representation of automation dependencies
+
+### **3. Custom Objects and Fields**
+- `Automation_Analysis__c`: Object to store analysis results
+- `Log_Analysis__c`: Object to store log analysis data
+- Custom fields to track relationships and store analysis metrics
 
 ## **Next Steps**
-1. Set up the project structure with the recommended stack.
-2. Implement API connections to Salesforce.
-3. Develop the UI for automation listing and log analysis.
-4. Build interactive data visualization components.
-5. Test and optimize for performance.
+1. Set up SFDX project structure
+2. Create core Apex classes for metadata retrieval
+3. Build basic LWC components for UI
+4. Implement log analysis functionality
+5. Create visualizations for dependencies and logs
+6. Test and refine the application
 

@@ -1,28 +1,25 @@
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: 'https://api.example.com',
-  timeout: 1000,
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
-export const getData = async () => {
-  try {
-    const response = await api.get('/data');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    throw error;
-  }
-};
+// Flow endpoints
+export const getFlows = () => api.get('/flows');
 
-export const postData = async (data: any) => {
-  try {
-    const response = await api.post('/data', data);
-    return response.data;
-  } catch (error) {
-    console.error('Error posting data:', error);
-    throw error;
-  }
-};
+// Apex endpoints
+export const getApexTriggers = () => api.get('/apex/triggers');
+export const getApexClasses = () => api.get('/apex/classes');
 
-export {};
+// Log endpoints
+export const getLogs = () => api.get('/logs');
+export const getLogById = (id: string) => api.get(`/logs/${id}`);
+export const analyzeLog = (logId: string) => api.post('/logs/analyze', { logId });
+
+export default api;

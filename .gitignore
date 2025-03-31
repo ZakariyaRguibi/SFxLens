@@ -58,9 +58,31 @@ Thumbs.db
 # Salesforce specific
 /.sfdx/
 .sf/
+.localdevserver/
 
-# Misc
-.cache/
-*.bak
-*.tmp
-.eslintcache
+# LWC configuration files
+**/jsconfig.json
+**/.eslintrc.json
+
+# LWC Jest tests
+**/__tests__/**
+
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# SOQL Query Results
+**/scripts/soql/query-results
+
+# Scratch org deployment artifacts
+**/deployments/**
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache and build files
+.tmp/
+.history/
+.husky/
