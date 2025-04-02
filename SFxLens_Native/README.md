@@ -1,18 +1,40 @@
-# Salesforce DX Project: Next Steps
+# SFxLens - Salesforce Automation Explorer
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+SFxLens is a Salesforce-native tool designed to help developers, admins, and architects understand and optimize automation in Salesforce orgs. It provides a comprehensive view of all automation components (Flows, Apex Triggers, Workflow Rules, etc.) and their relationships.
 
-## How Do You Plan to Deploy Your Changes?
+## Key Features
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+- **Automation Discovery**: Scan and categorize all automation by object
+- **Graphical Visualization**: Interactive schema builder for automation
+- **Impact Analysis**: Track dependencies between automation components
+- **Error & Log Analysis**: Centralized view of automation-related errors
+- **Performance Insights**: Monitor automation execution times and identify inefficiencies
 
-## Configure Your Salesforce DX Project
+## Project Structure
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+The project follows a layered architecture:
 
-## Read All About It
+- **Integration Layer**: Interfaces with Salesforce APIs
+- **Data Layer**: Stores metadata and analysis results
+- **Service Layer**: Provides discovery, analysis, and visualization services
+- **Presentation Layer**: LWC UI components and visualization
+- **User Interfaces**: End-user interfaces for exploring and analyzing automation
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+## Development
+
+This project is built using Salesforce DX. To set up your development environment:
+
+1. Clone this repository
+2. Set up a Salesforce DX project
+3. Create a scratch org: `sfdx force:org:create -f config/project-scratch-def.json -a SFxLens`
+4. Push the source to your scratch org: `sfdx force:source:push`
+5. Assign the permission sets: `sfdx force:user:permset:assign -n SFxLens_Admin`
+6. Open the org: `sfdx force:org:open`
+
+## Testing
+
+Run tests with: `sfdx force:apex:test:run -r human`
+
+## Contributing
+
+See CONTRIBUTING.md for guidelines on contributing to this project.
