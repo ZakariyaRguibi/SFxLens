@@ -146,7 +146,7 @@ jobs:
 
       # Upload Code Analyzer results
       - name: "Upload Code Analyzer results"
-        uses: actions/upload-artifact@4
+        uses: actions/upload-artifact@4.6.2
         with:
           name: code-analyzer-results
           path: ./code-analyzer-results/
