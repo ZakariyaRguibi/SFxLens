@@ -345,7 +345,6 @@ jobs:
 
           This page provides access to the results of the most recent code analysis run.
 
-          [View Full Code Analysis Report](/code-analyzer/report.html)
 
           The code analysis report provides insights into code quality, security, and best practices compliance.
           EOF
