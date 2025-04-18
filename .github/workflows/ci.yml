@@ -20,6 +20,7 @@ on:
 jobs:
   format-lint-lwc-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Checkout the source code
       - name: "Checkout source code"
@@ -167,6 +168,7 @@ jobs:
 
   scratch-org-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: format-lint-lwc-tests
     if: github.actor != 'dependabot[bot]'
     steps:
@@ -245,6 +247,7 @@ jobs:
 
   generate-apexdocs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Checkout the source code
       - name: "Checkout source code"
@@ -359,6 +362,7 @@ jobs:
 
   deployment-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: scratch-org-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -429,6 +433,7 @@ jobs:
 
   publish-reports:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [format-lint-lwc-tests, deployment-validation, generate-apexdocs]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -438,35 +443,54 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # For GitHub Pages, we still need to download the artifacts because they're created in different jobs
+      # Add a step to ensure the pages directory exists
+      - name: Prepare directories
+        run: mkdir -p ./pages
+      
+      # Add error handling for artifact downloads
       - name: Download code analyzer results
         uses: actions/download-artifact@v4.1.4
         with:
           name: code-analyzer-results
           path: ./pages/code-analyzer-results
+        continue-on-error: true
 
       - name: Download deployment report
         uses: actions/download-artifact@v4.1.4
         with:
           name: deployment-report
           path: ./pages/deployment-report
+        continue-on-error: true
 
       - name: Download VitePress site
         uses: actions/download-artifact@v4.1.4
         with:
           name: vitepress-site
           path: ./pages/apexdocs
+        continue-on-error: true
 
       - name: Download raw ApexDocs documentation
         uses: actions/download-artifact@v4.1.4
         with:
           name: apexdocs-output
           path: ./pages/apexdocs-raw
+        continue-on-error: true
+
+      # Add fallback for missing artifacts
+      - name: Check for missing artifacts
+        run: |
+          for dir in "./pages/code-analyzer-results" "./pages/deployment-report" "./pages/apexdocs"; do
+            if [ ! -d "$dir" ] || [ -z "$(ls -A "$dir" 2>/dev/null)" ]; then
+              echo "Directory $dir is empty or missing, creating placeholder"
+              mkdir -p "$dir"
+              echo "<html><body><h1>Report not available</h1><p>This report was not generated in the latest run.</p></body></html>" > "$dir/index.html"
+            fi
+          done
 
       - name: Create index page
         run: |
           mkdir -p ./pages
-          cp ./.github/templates/reports-index.html ./pages/index.html
+          cp .github/templates/reports-index.html ./pages/index.html
           # Update the ApexDocs link to point to the VitePress site
           sed -i 's|href="./apexdocs/index.html"|href="./apexdocs/"|g' ./pages/index.html
           # Replace the date placeholder
