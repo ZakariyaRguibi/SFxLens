@@ -1,13 +1,13 @@
 export default {
   title: 'SFxLens API Documentation',
   description: 'Apex documentation for the SFxLens project',
-  base: '/SFxLens/apexdocs/',
+  base: '/',
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'API Reference', link: '/markdown/' },
       { text: 'Changelog', link: '/changelog/changelog' },
-      { text: 'Code Analyzer', link: '/code-analyzer' },
+      { text: 'Code Analyzer', link: '/code-analyzer/report.html' },
     ],
     sidebar: {
       '/markdown/': [

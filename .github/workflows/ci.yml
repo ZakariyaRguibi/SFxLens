@@ -339,15 +339,15 @@ jobs:
           [Download OpenAPI Specification](/sfxlens-api.json)
           EOF
           
-          # Create Code Analyzer page that will be populated later
+          # Create Code Analyzer page that will link directly to the report
           cat > ./apexdocs-output/code-analyzer.md << 'EOF'
           # Code Analyzer Results
 
-          This page displays the results of the most recent code analysis run.
+          This page provides access to the results of the most recent code analysis run.
 
-          <div id="code-analyzer-content">
-            <iframe src="/code-analyzer/report.html" width="100%" height="800px" frameborder="0"></iframe>
-          </div>
+          [View Full Code Analysis Report](/code-analyzer/report.html)
+
+          The code analysis report provides insights into code quality, security, and best practices compliance.
           EOF
 
       # Build VitePress site
@@ -455,10 +455,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Add a step to ensure the pages directory exists
+      # Prepare directories
       - name: Prepare directories
-        run: mkdir -p ./pages/apexdocs
+        run: mkdir -p ./pages
       
+      # Download VitePress site to the root of pages directory
+      - name: Download VitePress site
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: vitepress-site
+          path: ./pages
+        continue-on-error: true
+
       # Add error handling for artifact downloads
       - name: Download code analyzer results
         uses: actions/download-artifact@v4.1.4
@@ -467,52 +475,37 @@ jobs:
           path: ./pages/code-analyzer-results
         continue-on-error: true
 
-      # Copy code analyzer results into VitePress public folder for iframe access
-      - name: Copy code analyzer results to VitePress site
+      # Make code analyzer results available as direct link rather than iframe
+      - name: Copy code analyzer results to public directory
         run: |
-          # Create directory for code analyzer results within VitePress site
-          mkdir -p ./pages/apexdocs/code-analyzer
-          # Copy the HTML report to the VitePress public directory
+          # Create public directory if it doesn't exist
+          mkdir -p ./pages/public
+          
+          # Copy the HTML report to the public directory
           if [ -f "./pages/code-analyzer-results/report.html" ]; then
-            cp -r ./pages/code-analyzer-results/* ./pages/apexdocs/code-analyzer/
-            echo "Copied code analyzer results to VitePress site"
+            cp -r ./pages/code-analyzer-results/* ./pages/public/code-analyzer/
+            echo "Copied code analyzer results to public directory"
           else
             echo "Code analyzer results not found, creating placeholder"
-            mkdir -p ./pages/apexdocs/code-analyzer
-            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/apexdocs/code-analyzer/report.html
+            mkdir -p ./pages/public/code-analyzer
+            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/public/code-analyzer/report.html
           fi
 
       - name: Download deployment report
         uses: actions/download-artifact@v4.1.4
         with:
           name: deployment-report
-          path: ./pages/apexdocs/deployment-report
-        continue-on-error: true
-
-      - name: Download VitePress site
-        uses: actions/download-artifact@v4.1.4
-        with:
-          name: vitepress-site
-          path: ./pages/apexdocs
-        continue-on-error: true
-
-      - name: Download raw ApexDocs documentation
-        uses: actions/download-artifact@v4.1.4
-        with:
-          name: apexdocs-output
-          path: ./pages/apexdocs-raw
+          path: ./pages/deployment-report
         continue-on-error: true
 
       # Add fallback for missing artifacts
       - name: Check for missing artifacts
         run: |
-          for dir in "./pages/code-analyzer-results" "./pages/apexdocs"; do
-            if [ ! -d "$dir" ] || [ -z "$(ls -A "$dir" 2>/dev/null)" ]; then
-              echo "Directory $dir is empty or missing, creating placeholder"
-              mkdir -p "$dir"
-              echo "<html><body><h1>Report not available</h1><p>This report was not generated in the latest run.</p></body></html>" > "$dir/index.html"
-            fi
-          done
+          if [ ! -d "./pages" ] || [ -z "$(ls -A "./pages" 2>/dev/null)" ]; then
+            echo "Main pages directory is empty or missing, creating placeholder"
+            mkdir -p "./pages"
+            echo "<html><body><h1>Documentation not available</h1><p>The documentation was not generated in the latest run.</p></body></html>" > "./pages/index.html"
+          fi
 
       # GitHub Pages deployment
       - name: Setup Pages
