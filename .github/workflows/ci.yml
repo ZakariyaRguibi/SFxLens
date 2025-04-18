@@ -276,10 +276,10 @@ jobs:
         run: |
           # Create VitePress config directory
           mkdir -p ./apexdocs-output/.vitepress
-          
+
           # Copy VitePress config from template
           cp ./.github/templates/vitepress-config.js ./apexdocs-output/.vitepress/config.js
-          
+
           # Copy index page from template
           cp ./.github/templates/vitepress-index.md ./apexdocs-output/index.md
 
@@ -473,42 +473,50 @@ jobs:
           path: ./temp-code-analyzer
         continue-on-error: true
 
-      # Copy code analyzer report to the public directory and create proper VitePress pages
-      - name: Set up code analyzer report
+      # Process and link Code Analyzer results to VitePress site
+      - name: Process Code Analyzer results
         run: |
-          if [ -f "./temp-code-analyzer/report.html" ]; then
-            echo "Code analyzer results found, setting up for VitePress"
+          # Check if code analyzer results exist
+          if [ -d "./temp-code-analyzer" ] && [ -n "$(ls -A ./temp-code-analyzer 2>/dev/null)" ]; then
+            echo "Processing Code Analyzer results..."
             
-            # Copy to public directory for VitePress integration
-            mkdir -p ./pages/public/code-analyzer
-            cp ./temp-code-analyzer/report.html ./pages/public/code-analyzer/report.html
-            
-            # Create a VitePress markdown index page that links to the report
+            # Create a directory for the code analyzer reports in the pages directory
             mkdir -p ./pages/code-analyzer
-            cat > ./pages/code-analyzer/index.md << 'EOF'
-            # Code Analyzer Report
+            
+            # Copy the HTML report to the pages directory
+            if [ -f "./temp-code-analyzer/report.html" ]; then
+              cp ./temp-code-analyzer/report.html ./pages/code-analyzer/index.html
+            fi
+            
+            # Copy any other related files (like CSS, JavaScript) if they exist
+            cp -r ./temp-code-analyzer/*.{css,js} ./pages/code-analyzer/ 2>/dev/null || true
+            
+            # Create a link page in the VitePress site to the code analyzer report
+            cat > ./pages/code-analyzer.md << 'EOF'
+            # Code Analysis Report
 
-            The code analyzer report provides detailed analysis of the codebase, highlighting potential issues, best practices, and security considerations.
+            The latest static code analysis report for the SFxLens project is available here:
 
-            [View the full Code Analyzer Report](/code-analyzer/report.html)
+            [View Code Analyzer Report](/code-analyzer/)
+            
+            This report contains detailed information about code quality, security, and best practices compliance.
             EOF
             
-          else 
-            echo "Code analyzer results not found, creating placeholder"
-            
-            # Create a VitePress markdown page with the placeholder message
+            echo "Code Analyzer results processed and linked to VitePress site."
+          else
+            echo "No Code Analyzer results found."
+            # Create a placeholder page
             mkdir -p ./pages/code-analyzer
-            cat > ./pages/code-analyzer/index.md << 'EOF'
-            # Code Analyzer Report
-
-            No report is currently available from the latest run.
-
-            The code analyzer report will be available here once the analysis process completes successfully in the CI pipeline.
-            EOF
+            echo "<html><body><h1>Code Analysis Report</h1><p>No Code Analyzer results were found in the latest run.</p></body></html>" > ./pages/code-analyzer/index.html
             
-            # Create placeholder in public directory
-            mkdir -p ./pages/public/code-analyzer
-            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/public/code-analyzer/report.html
+            # Create a link page in the VitePress site
+            cat > ./pages/code-analyzer.md << 'EOF'
+            # Code Analysis Report
+
+            The code analysis report is currently unavailable.
+            
+            [Check Status](/code-analyzer/)
+            EOF
           fi
 
       - name: Download deployment report
