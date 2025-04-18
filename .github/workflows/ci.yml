@@ -152,6 +152,7 @@ jobs:
           path: ./code-analyzer-results/
           retention-days: 14
           if-no-files-found: warn
+          compression-level: 0 # Disable compression
 
       # LWC unit tests
       - name: "Unit test Lightning Web Components"
@@ -312,3 +313,69 @@ jobs:
         with:
           name: deployment-report
           path: deployment_report.md
+          compression-level: 0 # Disable compression
+
+  publish-reports:
+    runs-on: ubuntu-latest
+    needs: [format-lint-lwc-tests, deployment-validation]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # For GitHub Pages, we still need to download the artifacts because they're created in different jobs
+      - name: Download code analyzer results
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: code-analyzer-results
+          path: ./pages/code-analyzer-results
+
+      - name: Download deployment report
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: deployment-report
+          path: ./pages/deployment-report
+
+      - name: Create index page
+        run: |
+          cat > ./pages/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>SFxLens Reports</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+              h1 { color: #1E88E5; }
+              .report-link { margin: 10px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px; }
+              a { color: #0D47A1; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+            </style>
+          </head>
+          <body>
+            <h1>SFxLens Reports</h1>
+            <div class="report-link">
+              <a href="./code-analyzer-results/report.html">Code Analyzer Report</a>
+            </div>
+            <div class="report-link">
+              <a href="./deployment-report/deployment_report.md">Deployment Report</a>
+            </div>
+            <p>Generated on $(date)</p>
+          </body>
+          </html>
+          EOF
+
+      # GitHub Pages deployment
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./pages
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
