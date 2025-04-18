@@ -44,7 +44,7 @@ jobs:
       - name: "Set up Python for Flowtest engine"
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       # Verify Python installation
       - name: "Verify Python installation"
@@ -113,7 +113,7 @@ jobs:
           commit_user_name: "GitHub Actions"
           commit_user_email: "actions@github.com"
           commit_author: "GitHub Actions <actions@github.com>"
-          push_options: '--force'
+          push_options: "--force"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Run Code Analyzer v5 using CLI
@@ -152,7 +152,6 @@ jobs:
           path: ./code-analyzer-results/
           retention-days: 14
           if-no-files-found: warn
-          compression-level: 0 # Disable compression
 
       # LWC unit tests
       - name: "Unit test Lightning Web Components"
@@ -261,9 +260,25 @@ jobs:
       - name: "Install ApexDocs"
         run: npm install -g @cparra/apexdocs
 
+      # Install VitePress
+      - name: "Install VitePress"
+        run: npm add -D vitepress
+
       # Create output directory
       - name: "Create output directory"
         run: mkdir -p ./apexdocs-output
+
+      # Setup VitePress docs structure
+      - name: "Setup VitePress docs structure"
+        run: |
+          # Create VitePress config directory
+          mkdir -p ./apexdocs-output/.vitepress
+
+          # Copy VitePress config file from template
+          cp ./.github/templates/vitepress-config.js ./apexdocs-output/.vitepress/config.js
+
+          # Copy index page from template
+          cp ./.github/templates/vitepress-index.md ./apexdocs-output/index.md
 
       # Generate documentation
       - name: "Generate ApexDocs documentation"
@@ -273,52 +288,74 @@ jobs:
           mkdir -p ./apexdocs-output/openapi
           mkdir -p ./apexdocs-output/changelog
           mkdir -p ./temp-previous-version
-          
+
           # Get previous commit code for changelog generation
           if [ "$(git rev-list --count HEAD)" -gt 1 ]; then
             # Get the previous commit and extract relevant Apex files
-            git checkout HEAD~1 -- force-app/main/default/classes
-            cp -r force-app/main/default/classes ./temp-previous-version/
-            git checkout HEAD -- force-app/main/default/classes
+            git checkout HEAD~1 -- force-app/
+            cp -r force-app/ ./temp-previous-version/
+            git checkout HEAD -- force-app/
             
             # Generate changelog comparing previous commit to current
             apexdocs changelog \
               --previousVersionDir ./temp-previous-version \
-              --currentVersionDir force-app/main/default/classes \
+              --currentVersionDir force-app/ \
               --targetDir ./apexdocs-output/changelog \
               --fileName "changelog" \
-              --scope  global public private protected
+              --scope global public private protected 
           else
             # If this is the first commit, create a placeholder
             echo "# Changelog\n\nInitial version - no changes to report." > ./apexdocs-output/changelog/changelog.md
           fi
-          
+
           # Generate Markdown documentation for Apex classes
-          apexdocs markdown --sourceDir force-app/main/default/classes   \
+          apexdocs markdown --sourceDir force-app/ \
             --targetDir ./apexdocs-output/markdown \
-            --scope  global public private protected \
+            --scope global public private protected \
             --sortAlphabetically true \
             --includeMetadata true
-          
+
           # Generate OpenAPI spec for any REST resources
-          apexdocs openapi --sourceDir force-app/main/default/classes \
+          apexdocs openapi --sourceDir force-app/ \
             --targetDir ./apexdocs-output/openapi \
-            --fileName "sfxlens-api.json" \
+            --fileName "sfxlens-api" \
             --title "SFxLens REST API" \
             --apiVersion "1.0.0"
           
-          # Copy template file and replace placeholder
-          cp ./.github/templates/apexdocs-index.html ./apexdocs-output/index.html
-          # Replace the date placeholder
-          sed -i "s/GENERATION_DATE/$(date)/g" ./apexdocs-output/index.html
+          # Move OpenAPI spec to public directory for access via VitePress
+          mkdir -p ./apexdocs-output/public
+          cp ./apexdocs-output/openapi/sfxlens-api.json ./apexdocs-output/public/
 
-      # Upload documentation as artifact
+          # Create an OpenAPI page
+          cat > ./apexdocs-output/openapi.md << 'EOF'
+          # OpenAPI Specification
+
+          The SFxLens REST API is documented using the OpenAPI specification.
+
+          [Download OpenAPI Specification](/sfxlens-api.json)
+          EOF
+
+      # Build VitePress site
+      - name: "Build VitePress site"
+        run: |
+          cd ./apexdocs-output
+          npx vitepress build
+          # Move the built site to a directory that will be uploaded as an artifact
+          mkdir -p ../vitepress-site
+          cp -r ./.vitepress/dist/* ../vitepress-site/
+
+      # Upload both raw markdown and built VitePress site as artifacts
       - name: "Upload ApexDocs documentation"
         uses: actions/upload-artifact@v4.6.2
         with:
           name: apexdocs-output
           path: ./apexdocs-output
-          compression-level: 0 # Disable compression
+
+      - name: "Upload VitePress site"
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: vitepress-site
+          path: ./vitepress-site
 
   deployment-validation:
     runs-on: ubuntu-latest
@@ -389,7 +426,6 @@ jobs:
         with:
           name: deployment-report
           path: deployment_report.md
-          compression-level: 0 # Disable compression
 
   publish-reports:
     runs-on: ubuntu-latest
@@ -414,17 +450,25 @@ jobs:
         with:
           name: deployment-report
           path: ./pages/deployment-report
-          
-      - name: Download ApexDocs documentation
+
+      - name: Download VitePress site
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: vitepress-site
+          path: ./pages/apexdocs
+
+      - name: Download raw ApexDocs documentation
         uses: actions/download-artifact@v4.1.4
         with:
           name: apexdocs-output
-          path: ./pages/apexdocs
+          path: ./pages/apexdocs-raw
 
       - name: Create index page
         run: |
           mkdir -p ./pages
           cp ./.github/templates/reports-index.html ./pages/index.html
+          # Update the ApexDocs link to point to the VitePress site
+          sed -i 's|href="./apexdocs/index.html"|href="./apexdocs/"|g' ./pages/index.html
           # Replace the date placeholder
           sed -i "s/GENERATION_DATE/$(date)/g" ./pages/index.html
 
