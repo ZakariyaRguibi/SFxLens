@@ -7,7 +7,7 @@ export default {
       { text: 'Home', link: '/' },
       { text: 'API Reference', link: '/markdown/' },
       { text: 'Changelog', link: '/changelog/changelog' },
-      { text: 'Code Analyzer', link: '/code-analyzer/' },
+      { text: 'Code Analyzer', link: 'https://zakariyarguibi.github.io/SFxLens/report.html' },
     ],
     sidebar: {
       '/markdown/': [

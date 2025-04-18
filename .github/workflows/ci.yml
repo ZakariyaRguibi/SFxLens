@@ -265,7 +265,7 @@ jobs:
         uses: actions/download-artifact@v4.1.4
         with:
           name: code-analyzer-results
-          path: ./code-analyzer-results
+          path: ./apexdocs-output/public/
         continue-on-error: true
 
       # Install ApexDocs package
@@ -319,7 +319,7 @@ jobs:
               --scope global public private protected 
           else
             # If this is the first commit, create a placeholder
-            echo "# Changelog\n\nInitial version - no changes to report." > ./apexdocs-output/changelog/changelog.md
+            echo "# Changelog Initial version - no changes to report." > ./apexdocs-output/changelog/changelog.md
           fi
 
           # Generate Markdown documentation for Apex classes
@@ -348,30 +348,6 @@ jobs:
           [Download OpenAPI Specification](/sfxlens-api.json)
           EOF
 
-          # Copy Code Analyzer results to public directory and create code-analyzer page
-          if [ -f "./code-analyzer-results/report.html" ]; then
-            # Copy Code Analyzer HTML report to public directory
-            cp ./code-analyzer-results/report.html ./apexdocs-output/public/code-analyzer-report.html
-            
-            # Create a Code Analyzer page linking to the report
-            cat > ./apexdocs-output/code-analyzer.md << 'EOF'
-          # Code Analyzer Report
-
-          This page provides access to the latest Code Analyzer report for the SFxLens project.
-
-          The Code Analyzer tool checks your code against best practices, security standards, and performance guidelines.
-
-          [View Code Analyzer Report](https://zakariyarguibi.github.io/SFxLens/code-analyzer-report.html)
-          EOF
-          else
-            # Create a placeholder page if report doesn't exist
-            cat > ./apexdocs-output/code-analyzer.md << 'EOF'
-          # Code Analyzer Report
-
-          The Code Analyzer report is not available for this build.
-
-          Please check the GitHub Actions workflow logs for more information.
-          EOF
           fi
 
       # Update VitePress config to include Code Analyzer page in navigation
