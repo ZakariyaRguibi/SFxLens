@@ -7,6 +7,7 @@ export default {
       { text: 'Home', link: '/' },
       { text: 'API Reference', link: '/markdown/' },
       { text: 'Changelog', link: '/changelog/changelog' },
+      { text: 'Code Analyzer', link: '/code-analyzer' },
     ],
     sidebar: {
       '/markdown/': [
@@ -19,7 +20,7 @@ export default {
       ]
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/zakariarguibi/SFxLens' }
+      { icon: 'github', link: 'https://github.com/ZakariyaRguibi/SFxLens' }
     ],
     footer: {
       message: 'Generated with ApexDocs and VitePress',
