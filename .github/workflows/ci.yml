@@ -472,23 +472,18 @@ jobs:
         uses: actions/download-artifact@v4.1.4
         with:
           name: code-analyzer-results
-          path: ./pages/code-analyzer-results
+          path: ./pages/code-analyzer
         continue-on-error: true
 
       # Make code analyzer results available as direct link rather than iframe
-      - name: Copy code analyzer results to public directory
+      - name: Veryfy code analyzer results
         run: |
-          # Create public directory if it doesn't exist
-          mkdir -p ./pages/public
-          
           # Copy the HTML report to the public directory
-          if [ -f "./pages/code-analyzer-results/report.html" ]; then
-            cp -r ./pages/code-analyzer-results/* ./pages/public/code-analyzer/
-            echo "Copied code analyzer results to public directory"
-          else
+          if [ -f "./pages/code-analyzer/report.html" ]; then
+            echo "Code analyzer results imported"
+          else 
             echo "Code analyzer results not found, creating placeholder"
-            mkdir -p ./pages/public/code-analyzer
-            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/public/code-analyzer/report.html
+            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/code-analyzer/report.html
           fi
 
       - name: Download deployment report
