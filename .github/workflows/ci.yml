@@ -146,7 +146,7 @@ jobs:
 
       # Upload Code Analyzer results
       - name: "Upload Code Analyzer results"
-        uses: actions/upload-artifact@4.6.2
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: code-analyzer-results
           path: ./code-analyzer-results/
@@ -244,6 +244,82 @@ jobs:
         if: always()
         run: sf org delete scratch -p -o sfxlens-scratch
 
+  generate-apexdocs:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the source code
+      - name: "Checkout source code"
+        uses: actions/checkout@v4
+
+      # Setup environment
+      - name: "Set up Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Install ApexDocs package
+      - name: "Install ApexDocs"
+        run: npm install -g @cparra/apexdocs
+
+      # Create output directory
+      - name: "Create output directory"
+        run: mkdir -p ./apexdocs-output
+
+      # Generate documentation
+      - name: "Generate ApexDocs documentation"
+        run: |
+          # Create separate folders for different doc types
+          mkdir -p ./apexdocs-output/markdown
+          mkdir -p ./apexdocs-output/openapi
+          mkdir -p ./apexdocs-output/changelog
+          mkdir -p ./temp-previous-version
+          
+          # Get previous commit code for changelog generation
+          if [ "$(git rev-list --count HEAD)" -gt 1 ]; then
+            # Get the previous commit and extract relevant Apex files
+            git checkout HEAD~1 -- force-app/main/default/classes
+            cp -r force-app/main/default/classes ./temp-previous-version/
+            git checkout HEAD -- force-app/main/default/classes
+            
+            # Generate changelog comparing previous commit to current
+            apexdocs changelog \
+              --previousVersionDir ./temp-previous-version \
+              --currentVersionDir force-app/main/default/classes \
+              --targetDir ./apexdocs-output/changelog \
+              --fileName "changelog" \
+              --scope  global public private protected
+          else
+            # If this is the first commit, create a placeholder
+            echo "# Changelog\n\nInitial version - no changes to report." > ./apexdocs-output/changelog/changelog.md
+          fi
+          
+          # Generate Markdown documentation for Apex classes
+          apexdocs markdown --sourceDir force-app/main/default/classes   \
+            --targetDir ./apexdocs-output/markdown \
+            --scope  global public private protected \
+            --sortAlphabetically true \
+            --includeMetadata true
+          
+          # Generate OpenAPI spec for any REST resources
+          apexdocs openapi --sourceDir force-app/main/default/classes \
+            --targetDir ./apexdocs-output/openapi \
+            --fileName "sfxlens-api.json" \
+            --title "SFxLens REST API" \
+            --apiVersion "1.0.0"
+          
+          # Copy template file and replace placeholder
+          cp ./.github/templates/apexdocs-index.html ./apexdocs-output/index.html
+          # Replace the date placeholder
+          sed -i "s/GENERATION_DATE/$(date)/g" ./apexdocs-output/index.html
+
+      # Upload documentation as artifact
+      - name: "Upload ApexDocs documentation"
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: apexdocs-output
+          path: ./apexdocs-output
+          compression-level: 0 # Disable compression
+
   deployment-validation:
     runs-on: ubuntu-latest
     needs: scratch-org-test
@@ -317,7 +393,7 @@ jobs:
 
   publish-reports:
     runs-on: ubuntu-latest
-    needs: [format-lint-lwc-tests, deployment-validation]
+    needs: [format-lint-lwc-tests, deployment-validation, generate-apexdocs]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       pages: write
@@ -338,34 +414,19 @@ jobs:
         with:
           name: deployment-report
           path: ./pages/deployment-report
+          
+      - name: Download ApexDocs documentation
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: apexdocs-output
+          path: ./pages/apexdocs
 
       - name: Create index page
         run: |
-          cat > ./pages/index.html << EOF
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>SFxLens Reports</title>
-            <style>
-              body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-              h1 { color: #1E88E5; }
-              .report-link { margin: 10px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px; }
-              a { color: #0D47A1; text-decoration: none; }
-              a:hover { text-decoration: underline; }
-            </style>
-          </head>
-          <body>
-            <h1>SFxLens Reports</h1>
-            <div class="report-link">
-              <a href="./code-analyzer-results/report.html">Code Analyzer Report</a>
-            </div>
-            <div class="report-link">
-              <a href="./deployment-report/deployment_report.md">Deployment Report</a>
-            </div>
-            <p>Generated on $(date)</p>
-          </body>
-          </html>
-          EOF
+          mkdir -p ./pages
+          cp ./.github/templates/reports-index.html ./pages/index.html
+          # Replace the date placeholder
+          sed -i "s/GENERATION_DATE/$(date)/g" ./pages/index.html
 
       # GitHub Pages deployment
       - name: Setup Pages
