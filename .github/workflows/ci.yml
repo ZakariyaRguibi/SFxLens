@@ -339,14 +339,7 @@ jobs:
           # Move OpenAPI spec to public directory for access via VitePress
           cp ./apexdocs-output/openapi/sfxlens-api.json ./apexdocs-output/public/
 
-          # Create an OpenAPI page
-          cat > ./apexdocs-output/openapi.md << 'EOF'
-          # OpenAPI Specification
 
-          The SFxLens REST API is documented using the OpenAPI specification.
-
-          [Download OpenAPI Specification](/sfxlens-api.json)
-          EOF
 
           fi
 
