@@ -166,84 +166,84 @@ jobs:
       #     flags: LWC
       #   continue-on-error: true
 
-  # scratch-org-test:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 30
-  #   needs: format-lint-lwc-tests
-  #   if: github.actor != 'dependabot[bot]'
-  #   steps:
-  #     # Checkout the source code
-  #     - name: "Checkout source code"
-  #       uses: actions/checkout@v4
+  scratch-org-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: format-lint-lwc-tests
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      # Checkout the source code
+      - name: "Checkout source code"
+        uses: actions/checkout@v4
 
-  #     # Setup environment directly
-  #     - name: "Set up Node.js"
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "20"
+      # Setup environment directly
+      - name: "Set up Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-  #     # Cache node_modules to speed up the process
-  #     - name: "Cache node_modules"
-  #       uses: actions/cache@v4
-  #       id: npm-cache
-  #       with:
-  #         path: node_modules
-  #         key: npm-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: npm-
+      # Cache node_modules to speed up the process
+      - name: "Cache node_modules"
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: npm-
 
-  #     # Install npm dependencies
-  #     - name: "Install npm dependencies"
-  #       if: steps.npm-cache.outputs.cache-hit != 'true'
-  #       run: HUSKY=0 npm ci
+      # Install npm dependencies
+      - name: "Install npm dependencies"
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: HUSKY=0 npm ci
 
-  #     # Install Salesforce CLI
-  #     - name: "Install Salesforce CLI"
-  #       run: |
-  #         npm install @salesforce/cli --location=global
-  #         sf --version
+      # Install Salesforce CLI
+      - name: "Install Salesforce CLI"
+        run: |
+          npm install @salesforce/cli --location=global
+          sf --version
 
-  #     # Store secret for dev hub
-  #     - name: "Populate auth file with DEVHUB_SFDX_URL secret"
-  #       shell: bash
-  #       run: |
-  #         echo ${{ secrets.DEVHUB_SFDX_URL }} > ./DEVHUB_SFDX_URL.txt
-  #         secretFileSize=$(wc -c "./DEVHUB_SFDX_URL.txt" | awk '{print $1}')
-  #         if [ $secretFileSize == 1 ]; then
-  #             echo "Missing DEVHUB_SFDX_URL secret. Is this workflow running on a fork?";
-  #             exit 1;
-  #         fi
+      # Store secret for dev hub
+      - name: "Populate auth file with DEVHUB_SFDX_URL secret"
+        shell: bash
+        run: |
+          echo ${{ secrets.DEVHUB_SFDX_URL }} > ./DEVHUB_SFDX_URL.txt
+          secretFileSize=$(wc -c "./DEVHUB_SFDX_URL.txt" | awk '{print $1}')
+          if [ $secretFileSize == 1 ]; then
+              echo "Missing DEVHUB_SFDX_URL secret. Is this workflow running on a fork?";
+              exit 1;
+          fi
 
-  #     # Authenticate dev hub
-  #     - name: "Authenticate Dev Hub"
-  #       run: sf org login sfdx-url -f ./DEVHUB_SFDX_URL.txt -a devhub -d
+      # Authenticate dev hub
+      - name: "Authenticate Dev Hub"
+        run: sf org login sfdx-url -f ./DEVHUB_SFDX_URL.txt -a devhub -d
 
-  #     # Create scratch org
-  #     - name: "Create scratch org"
-  #       run: sf org create scratch -f config/project-scratch-def.json -a sfxlens-scratch -d -y 1
+      # Create scratch org
+      - name: "Create scratch org"
+        run: sf org create scratch -f config/project-scratch-def.json -a sfxlens-scratch -d -y 1
 
-  #     # Deploy source to scratch org
-  #     - name: "Deploy source to scratch org"
-  #       run: sf project deploy start
+      # Deploy source to scratch org
+      - name: "Deploy source to scratch org"
+        run: sf project deploy start
 
-  #     # Assign permission set
-  #     - name: "Assign permission set to default user"
-  #       run: sf org assign permset -n SFxLens_Metadata_Access
+      # Assign permission set
+      - name: "Assign permission set to default user"
+        run: sf org assign permset -n SFxLens_Metadata_Access
 
-  #     # Run Apex tests
-  #     - name: "Run Apex tests"
-  #       run: sf apex test run -c -r human -d ./tests/apex -w 20
+      # Run Apex tests
+      - name: "Run Apex tests"
+        run: sf apex test run -c -r human -d ./tests/apex -w 20
 
-  #     # Upload code coverage data
-  #     - name: "Upload code coverage for Apex to Codecov.io"
-  #       uses: codecov/codecov-action@v4
-  #       with:
-  #         flags: Apex
-  #       continue-on-error: true
+      # Upload code coverage data
+      - name: "Upload code coverage for Apex to Codecov.io"
+        uses: codecov/codecov-action@v4
+        with:
+          flags: Apex
+        continue-on-error: true
 
-  #     # Housekeeping
-  #     - name: "Delete scratch org"
-  #       if: always()
-  #       run: sf org delete scratch -p -o sfxlens-scratch
+      # Housekeeping
+      - name: "Delete scratch org"
+        if: always()
+        run: sf org delete scratch -p -o sfxlens-scratch
 
   generate-apexdocs:
     runs-on: ubuntu-latest
@@ -393,76 +393,76 @@ jobs:
           name: vitepress-site
           path: ./vitepress-site
 
-  # deployment-validation:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
-  #   needs: scratch-org-test
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   steps:
-  #     # Checkout the source code
-  #     - name: "Checkout source code"
-  #       uses: actions/checkout@v4
+  deployment-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: scratch-org-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      # Checkout the source code
+      - name: "Checkout source code"
+        uses: actions/checkout@v4
 
-  #     # Setup environment directly
-  #     - name: "Set up Node.js"
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "20"
+      # Setup environment directly
+      - name: "Set up Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-  #     # Cache node_modules to speed up the process
-  #     - name: "Cache node_modules"
-  #       uses: actions/cache@v4
-  #       id: npm-cache
-  #       with:
-  #         path: node_modules
-  #         key: npm-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: npm-
+      # Cache node_modules to speed up the process
+      - name: "Cache node_modules"
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: npm-
 
-  #     # Install npm dependencies
-  #     - name: "Install npm dependencies"
-  #       if: steps.npm-cache.outputs.cache-hit != 'true'
-  #       run: HUSKY=0 npm ci
+      # Install npm dependencies
+      - name: "Install npm dependencies"
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: HUSKY=0 npm ci
 
-  #     # Install Salesforce CLI
-  #     - name: "Install Salesforce CLI"
-  #       run: |
-  #         npm install @salesforce/cli --location=global
-  #         sf --version
+      # Install Salesforce CLI
+      - name: "Install Salesforce CLI"
+        run: |
+          npm install @salesforce/cli --location=global
+          sf --version
 
-  #     # Store secret for dev hub
-  #     - name: "Populate auth file with DEVHUB_SFDX_URL secret"
-  #       shell: bash
-  #       run: |
-  #         echo ${{ secrets.DEVHUB_SFDX_URL }} > ./DEVHUB_SFDX_URL.txt
-  #         secretFileSize=$(wc -c "./DEVHUB_SFDX_URL.txt" | awk '{print $1}')
-  #         if [ $secretFileSize == 1 ]; then
-  #             echo "Missing DEVHUB_SFDX_URL secret. Is this workflow running on a fork?";
-  #             exit 1;
-  #         fi
+      # Store secret for dev hub
+      - name: "Populate auth file with DEVHUB_SFDX_URL secret"
+        shell: bash
+        run: |
+          echo ${{ secrets.DEVHUB_SFDX_URL }} > ./DEVHUB_SFDX_URL.txt
+          secretFileSize=$(wc -c "./DEVHUB_SFDX_URL.txt" | awk '{print $1}')
+          if [ $secretFileSize == 1 ]; then
+              echo "Missing DEVHUB_SFDX_URL secret. Is this workflow running on a fork?";
+              exit 1;
+          fi
 
-  #     # Authenticate dev hub
-  #     - name: "Authenticate Dev Hub"
-  #       run: sf org login sfdx-url -f ./DEVHUB_SFDX_URL.txt -a devhub -d
+      # Authenticate dev hub
+      - name: "Authenticate Dev Hub"
+        run: sf org login sfdx-url -f ./DEVHUB_SFDX_URL.txt -a devhub -d
 
-  #     # # Check for valid deployment to production
-  #     # - name: "Check deployment to production"
-  #     #   run: |
-  #     #     sf project deploy validate -d force-app --verbose
+      # # Check for valid deployment to production
+      # - name: "Check deployment to production"
+      #   run: |
+      #     sf project deploy validate -d force-app --verbose
 
-  #     # Generate deployment report
-  #     - name: "Generate deployment report"
-  #       if: success()
-  #       run: |
-  #         echo "# Deployment Validation Report" > deployment_report.md
-  #         echo "✅ Validation completed successfully on $(date)" >> deployment_report.md
-  #         echo "Ready for deployment to production environments." >> deployment_report.md
+      # Generate deployment report
+      - name: "Generate deployment report"
+        if: success()
+        run: |
+          echo "# Deployment Validation Report" > deployment_report.md
+          echo "✅ Validation completed successfully on $(date)" >> deployment_report.md
+          echo "Ready for deployment to production environments." >> deployment_report.md
 
-  #     # Upload deployment report
-  #     - name: "Upload deployment report"
-  #       uses: actions/upload-artifact@v4.6.2
-  #       with:
-  #         name: deployment-report
-  #         path: deployment_report.md
+      # Upload deployment report
+      - name: "Upload deployment report"
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: deployment-report
+          path: deployment_report.md
 
   publish-reports:
     runs-on: ubuntu-latest
