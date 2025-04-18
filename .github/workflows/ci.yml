@@ -467,8 +467,7 @@ jobs:
   publish-reports:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # needs: [format-lint-lwc-tests, deployment-validation, generate-apexdocs]
-    needs: [format-lint-lwc-tests, generate-apexdocs]
+    needs: [format-lint-lwc-tests, deployment-validation, generate-apexdocs]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       pages: write
