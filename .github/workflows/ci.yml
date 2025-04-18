@@ -248,6 +248,7 @@ jobs:
   generate-apexdocs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: format-lint-lwc-tests
     steps:
       # Checkout the source code
       - name: "Checkout source code"
@@ -258,6 +259,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      # Download Code Analyzer results from format-lint-lwc-tests job
+      - name: "Download Code Analyzer results"
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: code-analyzer-results
+          path: ./code-analyzer-results
+        continue-on-error: true
 
       # Install ApexDocs package
       - name: "Install ApexDocs"
@@ -291,6 +300,7 @@ jobs:
           mkdir -p ./apexdocs-output/openapi
           mkdir -p ./apexdocs-output/changelog
           mkdir -p ./apexdocs-output/public
+          mkdir -p ./apexdocs-output/code-analyzer
           mkdir -p ./temp-previous-version
 
           # Get previous commit code for changelog generation
@@ -337,6 +347,47 @@ jobs:
 
           [Download OpenAPI Specification](/sfxlens-api.json)
           EOF
+
+          # Copy Code Analyzer results to public directory and create code-analyzer page
+          if [ -f "./code-analyzer-results/report.html" ]; then
+            # Copy Code Analyzer HTML report to public directory
+            cp ./code-analyzer-results/report.html ./apexdocs-output/public/code-analyzer-report.html
+            
+            # Create a Code Analyzer page linking to the report
+            cat > ./apexdocs-output/code-analyzer.md << 'EOF'
+          # Code Analyzer Report
+
+          This page provides access to the latest Code Analyzer report for the SFxLens project.
+
+          The Code Analyzer tool checks your code against best practices, security standards, and performance guidelines.
+
+          [View Code Analyzer Report](/code-analyzer-report.html)
+          EOF
+          else
+            # Create a placeholder page if report doesn't exist
+            cat > ./apexdocs-output/code-analyzer.md << 'EOF'
+          # Code Analyzer Report
+
+          The Code Analyzer report is not available for this build.
+
+          Please check the GitHub Actions workflow logs for more information.
+          EOF
+          fi
+
+      # Update VitePress config to include Code Analyzer page in navigation
+      - name: "Update VitePress config with Code Analyzer link"
+        run: |
+          # Ensure the config file includes the Code Analyzer in the nav
+          if [ -f "./apexdocs-output/.vitepress/config.js" ]; then
+            # Check if we need to add Code Analyzer to the nav
+            if ! grep -q "text: 'Code Analyzer'" ./apexdocs-output/.vitepress/config.js; then
+              # Create a backup of the config file
+              cp ./apexdocs-output/.vitepress/config.js ./apexdocs-output/.vitepress/config.js.bak
+              
+              # Use sed to add Code Analyzer link to navigation (before the last item)
+              awk '/nav:/ {p=1} p && /items:/ {p=2} p==2 && /]/ {print "        { text: \"Code Analyzer\", link: \"/code-analyzer\" },"; p=0} {print}' ./apexdocs-output/.vitepress/config.js.bak > ./apexdocs-output/.vitepress/config.js
+            fi
+          fi
 
       # Build VitePress site
       - name: "Build VitePress site"
@@ -464,60 +515,6 @@ jobs:
           name: vitepress-site
           path: ./pages
         continue-on-error: true
-
-      # Download code analyzer results
-      - name: Download code analyzer results
-        uses: actions/download-artifact@v4.1.4
-        with:
-          name: code-analyzer-results
-          path: ./temp-code-analyzer
-        continue-on-error: true
-
-      # Process and link Code Analyzer results to VitePress site
-      - name: Process Code Analyzer results
-        run: |
-          # Check if code analyzer results exist
-          if [ -d "./temp-code-analyzer" ] && [ -n "$(ls -A ./temp-code-analyzer 2>/dev/null)" ]; then
-            echo "Processing Code Analyzer results..."
-            
-            # Create a directory for the code analyzer reports in the pages directory
-            mkdir -p ./pages/code-analyzer
-            
-            # Copy the HTML report to the pages directory
-            if [ -f "./temp-code-analyzer/report.html" ]; then
-              cp ./temp-code-analyzer/report.html ./pages/code-analyzer/index.html
-            fi
-            
-            # Copy any other related files (like CSS, JavaScript) if they exist
-            cp -r ./temp-code-analyzer/*.{css,js} ./pages/code-analyzer/ 2>/dev/null || true
-            
-            # Create a link page in the VitePress site to the code analyzer report
-            cat > ./pages/code-analyzer.md << 'EOF'
-            # Code Analysis Report
-
-            The latest static code analysis report for the SFxLens project is available here:
-
-            [View Code Analyzer Report](/code-analyzer/)
-            
-            This report contains detailed information about code quality, security, and best practices compliance.
-            EOF
-            
-            echo "Code Analyzer results processed and linked to VitePress site."
-          else
-            echo "No Code Analyzer results found."
-            # Create a placeholder page
-            mkdir -p ./pages/code-analyzer
-            echo "<html><body><h1>Code Analysis Report</h1><p>No Code Analyzer results were found in the latest run.</p></body></html>" > ./pages/code-analyzer/index.html
-            
-            # Create a link page in the VitePress site
-            cat > ./pages/code-analyzer.md << 'EOF'
-            # Code Analysis Report
-
-            The code analysis report is currently unavailable.
-            
-            [Check Status](/code-analyzer/)
-            EOF
-          fi
 
       - name: Download deployment report
         uses: actions/download-artifact@v4.1.4
