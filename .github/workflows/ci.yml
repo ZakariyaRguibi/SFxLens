@@ -277,8 +277,39 @@ jobs:
           # Create VitePress config directory
           mkdir -p ./apexdocs-output/.vitepress
 
-          # Copy VitePress config file from template
-          cp ./.github/templates/vitepress-config.js ./apexdocs-output/.vitepress/config.js
+          # Create a dynamic VitePress config with correct base URL
+          cat > ./apexdocs-output/.vitepress/config.js << 'EOF'
+          export default {
+            title: 'SFxLens API Documentation',
+            description: 'Apex documentation for the SFxLens project',
+            base: '/SFxLens/', // Set base to match the GitHub Pages repository name
+            themeConfig: {
+              nav: [
+                { text: 'Home', link: '/' },
+                { text: 'API Reference', link: '/markdown/' },
+                { text: 'Changelog', link: '/changelog/changelog' },
+                { text: 'Code Analyzer', link: '/code-analyzer/report.html' },
+              ],
+              sidebar: {
+                '/markdown/': [
+                  {
+                    text: 'API Documentation',
+                    items: [
+                      { text: 'Index', link: '/markdown/' }
+                    ]
+                  }
+                ]
+              },
+              socialLinks: [
+                { icon: 'github', link: 'https://github.com/ZakariyaRguibi/SFxLens' }
+              ],
+              footer: {
+                message: 'Generated with ApexDocs and VitePress',
+                copyright: 'Copyright © SFxLens Project'
+              }
+            }
+          }
+          EOF
 
           # Copy index page from template
           cp ./.github/templates/vitepress-index.md ./apexdocs-output/index.md
@@ -353,7 +384,15 @@ jobs:
       - name: "Build VitePress site"
         run: |
           cd ./apexdocs-output
+          # Ensure correct base URL in the VitePress config
+          grep -q "base: '/SFxLens/'" ./.vitepress/config.js || (
+            echo "Error: base URL in VitePress config should be '/SFxLens/' for GitHub Pages"
+            exit 1
+          )
+          # Build the site
           npx vitepress build
+          # Verify built output
+          ls -la ./.vitepress/dist/
           # Move the built site to a directory that will be uploaded as an artifact
           mkdir -p ../vitepress-site
           cp -r ./.vitepress/dist/* ../vitepress-site/
