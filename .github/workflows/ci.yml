@@ -276,41 +276,10 @@ jobs:
         run: |
           # Create VitePress config directory
           mkdir -p ./apexdocs-output/.vitepress
-
-          # Create a dynamic VitePress config with correct base URL
-          cat > ./apexdocs-output/.vitepress/config.js << 'EOF'
-          export default {
-            title: 'SFxLens API Documentation',
-            description: 'Apex documentation for the SFxLens project',
-            base: '/SFxLens/', // Set base to match the GitHub Pages repository name
-            themeConfig: {
-              nav: [
-                { text: 'Home', link: '/' },
-                { text: 'API Reference', link: '/markdown/' },
-                { text: 'Changelog', link: '/changelog/changelog' },
-                { text: 'Code Analyzer', link: '/code-analyzer/report.html' },
-              ],
-              sidebar: {
-                '/markdown/': [
-                  {
-                    text: 'API Documentation',
-                    items: [
-                      { text: 'Index', link: '/markdown/' }
-                    ]
-                  }
-                ]
-              },
-              socialLinks: [
-                { icon: 'github', link: 'https://github.com/ZakariyaRguibi/SFxLens' }
-              ],
-              footer: {
-                message: 'Generated with ApexDocs and VitePress',
-                copyright: 'Copyright © SFxLens Project'
-              }
-            }
-          }
-          EOF
-
+          
+          # Copy VitePress config from template
+          cp ./.github/templates/vitepress-config.js ./apexdocs-output/.vitepress/config.js
+          
           # Copy index page from template
           cp ./.github/templates/vitepress-index.md ./apexdocs-output/index.md
 
@@ -321,7 +290,7 @@ jobs:
           mkdir -p ./apexdocs-output/markdown
           mkdir -p ./apexdocs-output/openapi
           mkdir -p ./apexdocs-output/changelog
-          mkdir -p ./apexdocs-output/code-analyzer
+          mkdir -p ./apexdocs-output/public
           mkdir -p ./temp-previous-version
 
           # Get previous commit code for changelog generation
@@ -356,9 +325,8 @@ jobs:
             --fileName "sfxlens-api" \
             --title "SFxLens REST API" \
             --apiVersion "1.0.0"
-          
+
           # Move OpenAPI spec to public directory for access via VitePress
-          mkdir -p ./apexdocs-output/public
           cp ./apexdocs-output/openapi/sfxlens-api.json ./apexdocs-output/public/
 
           # Create an OpenAPI page
@@ -368,16 +336,6 @@ jobs:
           The SFxLens REST API is documented using the OpenAPI specification.
 
           [Download OpenAPI Specification](/sfxlens-api.json)
-          EOF
-          
-          # Create Code Analyzer page that will link directly to the report
-          cat > ./apexdocs-output/code-analyzer.md << 'EOF'
-          # Code Analyzer Results
-
-          This page provides access to the results of the most recent code analysis run.
-
-
-          The code analysis report provides insights into code quality, security, and best practices compliance.
           EOF
 
       # Build VitePress site
@@ -495,8 +453,10 @@ jobs:
     steps:
       # Prepare directories
       - name: Prepare directories
-        run: mkdir -p ./pages
-      
+        run: |
+          mkdir -p ./pages
+          mkdir -p ./pages/code-analyzer
+
       # Download VitePress site to the root of pages directory
       - name: Download VitePress site
         uses: actions/download-artifact@v4.1.4
@@ -505,23 +465,50 @@ jobs:
           path: ./pages
         continue-on-error: true
 
-      # Add error handling for artifact downloads
+      # Download code analyzer results
       - name: Download code analyzer results
         uses: actions/download-artifact@v4.1.4
         with:
           name: code-analyzer-results
-          path: ./pages/code-analyzer
+          path: ./temp-code-analyzer
         continue-on-error: true
 
-      # Make code analyzer results available as direct link rather than iframe
-      - name: Veryfy code analyzer results
+      # Copy code analyzer report to the public directory and create proper VitePress pages
+      - name: Set up code analyzer report
         run: |
-          # Copy the HTML report to the public directory
-          if [ -f "./pages/code-analyzer/report.html" ]; then
-            echo "Code analyzer results imported"
+          if [ -f "./temp-code-analyzer/report.html" ]; then
+            echo "Code analyzer results found, setting up for VitePress"
+            
+            # Copy to public directory for VitePress integration
+            mkdir -p ./pages/public/code-analyzer
+            cp ./temp-code-analyzer/report.html ./pages/public/code-analyzer/report.html
+            
+            # Create a VitePress markdown index page that links to the report
+            mkdir -p ./pages/code-analyzer
+            cat > ./pages/code-analyzer/index.md << 'EOF'
+            # Code Analyzer Report
+
+            The code analyzer report provides detailed analysis of the codebase, highlighting potential issues, best practices, and security considerations.
+
+            [View the full Code Analyzer Report](/code-analyzer/report.html)
+            EOF
+            
           else 
             echo "Code analyzer results not found, creating placeholder"
-            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/code-analyzer/report.html
+            
+            # Create a VitePress markdown page with the placeholder message
+            mkdir -p ./pages/code-analyzer
+            cat > ./pages/code-analyzer/index.md << 'EOF'
+            # Code Analyzer Report
+
+            No report is currently available from the latest run.
+
+            The code analyzer report will be available here once the analysis process completes successfully in the CI pipeline.
+            EOF
+            
+            # Create placeholder in public directory
+            mkdir -p ./pages/public/code-analyzer
+            echo "<html><body><h1>Code Analysis Report</h1><p>No report available from the latest run.</p></body></html>" > ./pages/public/code-analyzer/report.html
           fi
 
       - name: Download deployment report
